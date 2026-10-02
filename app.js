@@ -15,12 +15,8 @@ let paused = reducedMotion.matches;
 let hovering = false;
 let fetching = false;
 let submitting = false;
-let moving = false;
 let wallInView = true;
-let animationVersion = 0;
-let runningAnimations = [];
 let lastFocusedElement = null;
-let lastAdvanced = performance.now();
 let localRevision = 0;
 
 const projects = {
@@ -90,12 +86,18 @@ document.querySelectorAll('.filter').forEach(button => button.addEventListener('
   $('#project-count').textContent = `${count}개의 아이디어`;
 }));
 
-function stopAnimation() {
-  animationVersion++;
-  runningAnimations.forEach(animation => animation.cancel());
-  runningAnimations = [];
-  moving = false;
-}
+// Continuous vertical ticker. Only the cards inside the wall are in the DOM:
+// virtual slot k always shows messages[k mod N], so the scroll never runs out.
+const CARD_HEIGHT = 88;
+const CARD_PITCH = 96; // card height + gap
+const SCROLL_SPEED = 22; // px per second, about 4.4s per message
+const mod = (n, m) => ((n % m) + m) % m;
+const cards = new Map(); // virtual slot -> card element
+let scrollOffset = 0; // 0 = messages[0] in the middle; keeps growing while scrolling
+let centerSlot = null;
+let lastFrame = 0;
+
+function clearCards() { cards.clear(); centerSlot = null; currentIndex = -1; }
 function updatePauseButton() {
   pauseButton.disabled = messages.length < 2;
   pauseButton.textContent = paused ? '▷' : 'Ⅱ';
@@ -103,7 +105,7 @@ function updatePauseButton() {
   pauseButton.setAttribute('aria-label', paused ? '메시지 자동 스크롤 재생' : '메시지 자동 스크롤 일시정지');
 }
 function placeholder(title, detail = '', loading = false) {
-  stopAnimation(); wall.replaceChildren();
+  clearCards(); wall.replaceChildren();
   const box = document.createElement('div'); box.className = 'wall-placeholder';
   const symbol = document.createElement(loading ? 'span' : 'strong');
   if (loading) symbol.className = 'loader'; else symbol.textContent = '♡';
@@ -112,59 +114,77 @@ function placeholder(title, detail = '', loading = false) {
   box.append(symbol, text, small); wall.append(box);
   counter.textContent = ''; expandButton.hidden = true; updatePauseButton();
 }
+function createCard(item) {
+  const card = document.createElement('article');
+  card.className = 'message-card'; card.dataset.messageId = item.id;
+  const message = document.createElement('p'); message.textContent = item.message;
+  const author = document.createElement('span'); author.className = 'message-author'; author.textContent = item.nickname;
+  card.append(message, author);
+  return card;
+}
+function drawWall() {
+  const count = messages.length;
+  if (!count) return;
+  if (count === 1) scrollOffset = 0; // A single message stays still instead of repeating itself.
+  const height = wall.clientHeight || 280;
+  const middle = height / 2;
+  const top = middle - CARD_HEIGHT / 2;
+  const first = count === 1 ? 0 : Math.floor((scrollOffset - top - CARD_HEIGHT) / CARD_PITCH) + 1;
+  const last = count === 1 ? 0 : Math.ceil((scrollOffset + height - top) / CARD_PITCH) - 1;
+  cards.forEach((card, slot) => { if (slot < first || slot > last) { card.remove(); cards.delete(slot); } });
+  for (let slot = first; slot <= last; slot++) {
+    let card = cards.get(slot);
+    if (!card) { card = createCard(messages[mod(slot, count)]); cards.set(slot, card); wall.append(card); }
+    const y = top + slot * CARD_PITCH - scrollOffset;
+    // 0 in the middle, 1 at the neighbouring position: sharp in the middle, blurred and faded outside.
+    const distance = Math.abs(y + CARD_HEIGHT / 2 - middle) / CARD_PITCH;
+    const t = Math.min(1, distance);
+    card.style.transform = `translateY(${y.toFixed(2)}px) scale(${(1 - .06 * t).toFixed(4)})`;
+    card.style.opacity = (distance <= 1 ? 1 - .72 * distance : Math.max(0, .28 * (2 - distance))).toFixed(3);
+    card.style.filter = t < .01 ? 'none' : `blur(${(1.4 * t).toFixed(2)}px)`;
+  }
+  const nextCenter = count === 1 ? 0 : Math.round(scrollOffset / CARD_PITCH);
+  if (nextCenter !== centerSlot || cards.get(nextCenter)?.getAttribute('aria-hidden') !== 'false') {
+    centerSlot = nextCenter;
+    cards.forEach((card, slot) => card.setAttribute('aria-hidden', String(slot !== centerSlot)));
+  }
+  const index = mod(centerSlot, count);
+  if (index !== currentIndex) { currentIndex = index; counter.textContent = `${currentIndex + 1} / ${count}`; }
+}
 function renderMessages() {
-  stopAnimation(); wall.replaceChildren();
+  clearCards(); wall.replaceChildren();
   if (!messages.length) { placeholder('첫 번째 응원의 주인공이 되어 주세요.', '아직 도착한 응원 메시지가 없어요.'); return; }
-  currentIndex = ((currentIndex % messages.length) + messages.length) % messages.length;
-  // Always at most three DOM cards. With one or two messages, do not duplicate them.
-  const slots = messages.length >= 3 ? [-1, 0, 1] : messages.length === 2 ? [0, 1] : [0];
-  slots.forEach(offset => {
-    const index = (currentIndex + offset + messages.length) % messages.length;
-    const item = messages[index];
-    const card = document.createElement('article');
-    card.className = 'message-card'; card.dataset.slot = String(offset + 1); card.dataset.messageId = item.id;
-    card.setAttribute('aria-hidden', String(offset !== 0));
-    const message = document.createElement('p'); message.textContent = item.message;
-    const author = document.createElement('span'); author.className = 'message-author'; author.textContent = item.nickname;
-    card.append(message, author); wall.append(card);
-  });
-  counter.textContent = `${currentIndex + 1} / ${messages.length}`;
   expandButton.hidden = false;
   updatePauseButton();
+  drawWall();
 }
-async function advanceMessage() {
-  if (messages.length < 2 || paused || hovering || moving || document.hidden || dialog.open || !wallInView) return;
-  moving = true;
-  const version = animationVersion;
-  const cards = [...wall.querySelectorAll('.message-card')];
-  runningAnimations = cards.map(card => {
-    const slot = Number(card.dataset.slot);
-    const startsClear = slot === 1;
-    const endsClear = slot === 2;
-    return card.animate([
-      { transform: `translateY(0) scale(${startsClear ? 1 : .94})`, opacity: startsClear ? 1 : .28, filter: startsClear ? 'blur(0px)' : 'blur(1.4px)' },
-      { transform: `translateY(-96px) scale(${endsClear ? 1 : .94})`, opacity: slot === 0 ? 0 : endsClear ? 1 : .28, filter: endsClear ? 'blur(0px)' : 'blur(1.4px)' }
-    ], { duration: 750, easing: 'cubic-bezier(.22,.65,.25,1)', fill: 'forwards' });
-  });
-  try { await Promise.all(runningAnimations.map(animation => animation.finished)); } catch { return; }
-  if (version !== animationVersion) return;
-  currentIndex = (currentIndex + 1) % messages.length;
-  renderMessages();
-  const bottom = wall.querySelector('[data-slot="2"]');
-  if (bottom) runningAnimations.push(bottom.animate([{ opacity: 0 }, { opacity: .28 }], { duration: 350 }));
+function tick(now) {
+  const dt = lastFrame ? Math.min(.1, (now - lastFrame) / 1000) : 0; // Clamp so a stalled frame does not jump.
+  lastFrame = now;
+  if (messages.length > 1 && wallInView && !dialog.open) {
+    if (paused || hovering) {
+      // Glide the nearest message into the middle so it can be read while stopped.
+      const target = Math.round(scrollOffset / CARD_PITCH) * CARD_PITCH;
+      if (scrollOffset !== target) {
+        const diff = target - scrollOffset;
+        scrollOffset = Math.abs(diff) < .5 ? target : scrollOffset + diff * Math.min(1, dt * 8);
+        drawWall();
+      }
+    } else {
+      scrollOffset += SCROLL_SPEED * dt;
+      drawWall();
+    }
+  }
+  requestAnimationFrame(tick);
 }
-pauseButton.addEventListener('click', () => {
-  paused = !paused;
-  lastAdvanced = performance.now();
-  if (paused) renderMessages();
-  updatePauseButton();
-});
-wall.addEventListener('mouseenter', () => { hovering = true; if (moving) renderMessages(); });
-wall.addEventListener('mouseleave', () => { hovering = false; lastAdvanced = performance.now(); });
-reducedMotion.addEventListener('change', event => { paused = event.matches; renderMessages(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && moving) renderMessages(); lastAdvanced = performance.now(); });
+requestAnimationFrame(tick);
+pauseButton.addEventListener('click', () => { paused = !paused; updatePauseButton(); });
+// Mouse only: a tap on a phone fires mouseenter without a matching mouseleave and would stop the wall for good.
+wall.addEventListener('pointerenter', event => { if (event.pointerType === 'mouse') hovering = true; });
+wall.addEventListener('pointerleave', event => { if (event.pointerType === 'mouse') hovering = false; });
+reducedMotion.addEventListener('change', event => { paused = event.matches; updatePauseButton(); });
+window.addEventListener('resize', drawWall);
 if ('IntersectionObserver' in window) new IntersectionObserver(entries => { wallInView = entries[0].isIntersecting; }, { threshold: .25 }).observe(wall);
-setInterval(() => { if (performance.now() - lastAdvanced >= 3600) { lastAdvanced = performance.now(); advanceMessage(); } }, 400);
 expandButton.addEventListener('click', () => {
   const item = messages[currentIndex]; if (!item) return;
   const content = document.createElement('div'); content.className = 'dialog-full-message'; content.textContent = item.message;
@@ -187,9 +207,10 @@ function replaceMessages(nextMessages, preferId) {
   const previousId = preferId || messages[currentIndex]?.id;
   const seen = new Set();
   messages = nextMessages.filter(item => item && typeof item.id === 'string' && typeof item.nickname === 'string' && typeof item.message === 'string' && !seen.has(item.id) && seen.add(item.id));
-  currentIndex = Math.max(0, messages.findIndex(item => item.id === previousId));
+  // Keep the partly scrolled position on a background refresh so the wall does not jump.
+  const drift = preferId ? 0 : scrollOffset - Math.round(scrollOffset / CARD_PITCH) * CARD_PITCH;
+  scrollOffset = Math.max(0, messages.findIndex(item => item.id === previousId)) * CARD_PITCH + drift;
   renderMessages();
-  lastAdvanced = performance.now();
 }
 async function loadMessages({ quiet = false } = {}) {
   if (fetching || submitting) return;
