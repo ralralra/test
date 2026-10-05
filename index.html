@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8f2">
-  <meta name="description" content="구글시트, Apps Script, AI Studio와 GitHub로 생활 속 아이디어를 작동하는 앱과 웹페이지로 만드는 프로젝트 스튜디오.">
-  <title>MAKE:LAB — 아이디어를, 작동하는 웹으로</title>
+  <meta name="description" content="google & GitHub로 생활 속 아이디어를 작동하는 앱과 웹페이지로 만드는 프로젝트 스튜디오.">
+  <title>web-App project 아이디어를, 작동하는 웹으로</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='22' fill='%23232c27'/%3E%3Cpath d='M16 54V26h9l15 17 15-17h9v28H53V42L40 57 27 42v12' fill='%23c6ef70'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./styles.css">
   <script defer src="./app.js"></script>
@@ -74,7 +74,8 @@
     <section class="section cheer-section container" id="cheer" aria-labelledby="cheer-title"><div class="cheer-intro"><div class="eyebrow">03 / A LITTLE ENCOURAGEMENT</div><div class="cheer-heart"><svg class="icon"><use href="#heart"/></svg><span>✦</span></div><h2 id="cheer-title">작은 응원이,<br>다음 아이디어의<br><span class="highlight">시작이 됩니다.</span></h2><p>처음 만들어 본 용기에도,<br>새로운 도전을 앞둔 설렘에도.<br>따뜻한 한마디를 남겨 주세요.</p><div class="cheer-note"><span class="status-dot"></span> 여러분의 응원이 이곳에 차곡차곡</div></div><div class="cheer-panel"><div class="wall-heading"><span><svg class="icon"><use href="#heart"/></svg> 우리에게 도착한 응원</span><div class="wall-controls"><button id="reload-messages" class="icon-button" type="button" aria-label="응원 메시지 새로고침">↻</button><button id="pause-carousel" class="icon-button" type="button" aria-label="메시지 자동 스크롤 일시정지" aria-pressed="false" disabled>Ⅱ</button></div></div><div id="message-wall" class="message-wall" role="region" aria-label="응원 메시지: 가운데 메시지가 현재 메시지입니다" aria-busy="true"><div class="wall-placeholder"><span class="loader"></span><p>따뜻한 응원을 불러오고 있어요.</p></div></div><div class="wall-meta"><span id="wall-status" role="status">연결 중</span><span id="wall-counter"></span></div><button id="expand-message" class="expand-message" type="button" hidden>가운데 메시지 전체 보기 ↗</button><form id="cheer-form"><div class="form-heading"><h3>나의 응원 남기기</h3><span>마음을 담은 한 문장이면 충분해요.</span></div><label for="nickname">별명</label><input id="nickname" name="nickname" type="text" maxlength="40" required placeholder="어떤 이름으로 응원할까요?" autocomplete="nickname" aria-describedby="nickname-help"><span id="nickname-help" class="field-hint">별명은 20자 이내로 입력해 주세요.</span><div class="label-row"><label for="message">응원 메시지</label><span id="message-count">0 / 300</span></div><textarea id="message" name="message" rows="3" maxlength="600" required placeholder="여러분의 새로운 도전을 응원합니다!" aria-describedby="form-note message-count"></textarea><p id="form-note" class="form-note">별명과 메시지는 사이트에 공개됩니다. 연락처 등 개인정보는 적지 말아 주세요.</p><button id="submit-cheer" class="button primary submit-button" type="submit">응원 보내기 <svg class="icon"><use href="#arrow"/></svg></button><p id="form-status" class="form-status" role="status" aria-live="polite"></p></form></div></section>
   </main>
 
-  <footer class="site-footer"><div class="container footer-inner"><a class="brand" href="#">MAKE<span class="brand-colon">:</span>LAB</a><p>작게 시작하고, 함께 만들어 가요.</p><a href="https://github.com/ralralra/test" target="_blank" rel="noopener noreferrer">프로젝트 소스 보기 <svg class="icon"><use href="#up-right"/></svg></a></div></footer>
+  <footer class="site-footer"><div class="container footer-inner"><a class="brand" href="#">MAKE<span class="brand-colon">:</span>LAB</a><p>작게 시작하고, 함께 만들어 가요.</p>
+</div></footer>
   <dialog id="project-dialog" aria-labelledby="dialog-title"><div class="dialog-inner"><button class="dialog-close" type="button" aria-label="닫기">×</button><div class="eyebrow" id="dialog-eyebrow">PROJECT GUIDE</div><h2 id="dialog-title"></h2><p id="dialog-description"></p><div id="dialog-body"></div><button class="button primary dialog-done" type="button">확인했어요 <span>✓</span></button></div></dialog>
   <noscript><div class="noscript-note">응원 메시지 조회·등록과 프로젝트 상세 보기를 사용하려면 브라우저의 JavaScript를 켜 주세요.</div></noscript>
 </body>
