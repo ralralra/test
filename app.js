@@ -23,30 +23,22 @@ const projects = {
   meal: {
     title: '오늘의 급식, 우리의 별점',
     description: '급식 조회와 학생 의견 수집을 연결하는 학교생활 앱입니다.',
-    features: ['학교 검색과 나의 학교 설정', '나이스 급식 API로 날짜별 식단 조회', '별점과 한줄평을 구글시트에 저장', '학교·날짜별 평가 목록과 평균 별점 표시'],
-    steps: ['급식 API 키를 발급받고 데이터 항목 확인하기', 'Apps Script에 급식 조회·평가 저장 API 만들기', 'AI Studio에서 학교 선택·식단·평가 화면 만들기', '테스트하고 정적 웹 배포에 맞게 빌드하기'],
-    note: '현재 응원 게시판 서버는 별명과 메시지만 지원합니다. 급식 조회·평점은 별도 서버 기능을 추가해 구현합니다.'
+    features: ['학교 검색과 나의 학교 설정', '나이스 급식 API로 날짜별 식단 조회', '별점과 한줄평을 구글시트에 저장', '학교·날짜별 평가 목록과 평균 별점 표시']
   },
   festival: {
     title: '우리 부스에 놀러 와!',
     description: '우리 동아리만의 매력을 담고, 실제 방문과 참여로 연결하는 홍보 페이지입니다.',
-    features: ['부스 소개와 활동 사진', '운영 시간과 찾아오는 길', '참여 신청 및 구글시트 저장', '휴대폰에서도 보기 편한 반응형 화면'],
-    steps: ['소개할 활동과 필수 안내 정보 정리하기', 'HTML·CSS·JavaScript로 랜딩페이지 만들기', '신청 항목에 맞는 Apps Script 저장 API 연결하기', 'GitHub Pages로 공개하고 링크 공유하기'],
-    note: '신청 기능은 필요한 항목에 맞춰 서버를 확장합니다. 장소와 일정은 실제 정보로 입력하세요.'
+    features: ['부스 소개와 활동 사진', '운영 시간과 찾아오는 길', '참여 신청 및 구글시트 저장', '휴대폰에서도 보기 편한 반응형 화면']
   },
   portfolio: {
     title: '나를 소개하는 한 페이지',
     description: '관심사와 경험, 앞으로의 목표를 나의 언어와 디자인으로 표현하는 포트폴리오입니다.',
-    features: ['자기소개와 관심 분야', '활동 결과물과 프로젝트 이야기', '별명으로 남기는 응원 방명록', '나만의 색과 스타일로 꾸민 모바일 화면'],
-    steps: ['나를 설명하는 키워드와 활동 결과물 모으기', 'AI Studio 또는 HTML로 소개 화면 구성하기', '현재 응원 메시지 서버와 방명록 연결하기', 'GitHub Pages에 게시하고 화면·저장 동작 확인하기'],
-    note: '연락처나 개인정보를 공개하지 않고도 관심사와 활동 중심으로 나를 소개할 수 있습니다.'
+    features: ['자기소개와 관심 분야', '활동 결과물과 프로젝트 이야기', '별명으로 남기는 응원 방명록', '나만의 색과 스타일로 꾸민 모바일 화면']
   },
   town: {
     title: '우리 동네, 함께 바꾸기',
     description: '주변의 작은 불편을 발견하고, 함께 해결할 아이디어를 모으는 참여형 앱입니다.',
-    features: ['생활 속 문제와 개선 아이디어 등록', '분류별 의견 모아 보기', '지도 또는 목록으로 위치 안내', '수집한 의견을 정리해 캠페인 제안하기'],
-    steps: ['함께 해결하고 싶은 문제를 구체적으로 정하기', '위치·분류·의견을 저장할 구글시트 설계하기', 'Apps Script API와 앱의 입력·조회 화면 연결하기', '실제 의견을 수집하고 개선안을 공유하기'],
-    note: '위치와 분류를 저장하는 기능은 별도 구현이 필요합니다. 지도 서비스 이용 시 해당 서비스의 사용 조건을 확인하세요.'
+    features: ['생활 속 문제와 개선 아이디어 등록', '분류별 의견 모아 보기', '지도 또는 목록으로 위치 안내', '수집한 의견을 정리해 캠페인 제안하기']
   }
 };
 
@@ -71,8 +63,7 @@ function listSection(title, items, ordered) {
 document.querySelectorAll('.project-open').forEach(button => button.addEventListener('click', () => {
   const project = projects[button.dataset.project];
   const content = document.createElement('div');
-  content.append(listSection('이런 기능을 만들어요', project.features, false), listSection('제작 순서', project.steps, true));
-  const note = document.createElement('p'); note.className = 'form-note'; note.textContent = project.note; content.append(note);
+  content.append(listSection('이런 기능을 만들어요', project.features, false));
   showDialog(project.title, project.description, content);
 }));
 document.querySelectorAll('.dialog-close, .dialog-done').forEach(button => button.addEventListener('click', () => dialog.close()));
